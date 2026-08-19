@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오딘/무스펠 스마트 스케줄러</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; padding: 20px; max-width: 900px; margin: 0 auto; color: #333; }
+        h1 { text-align: center; color: #2c3e50; }
+        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 4px solid #34495e; }
+        
+        .boss-group { margin-bottom: 25px; }
+        .boss-group h2 { font-size: 18px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; color: #c0392b; margin-top: 0; }
+        .boss-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; gap: 10px; }
+        .boss-item:last-child { border-bottom: none; }
+        .boss-item:hover { background-color: #fdfdfd; }
+        .boss-name { font-weight: bold; width: 100px; font-size: 15px; }
+        
+        .input-group { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #555; }
+        input[type="number"] { width: 45px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        input[type="datetime-local"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 14px; }
+        
+        .timeline-btn { padding: 12px 16px; background-color: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; box-shadow: 0 3px 5px rgba(230, 126, 34, 0.3); transition: 0.2s; margin-top: 10px; }
+        .timeline-btn:hover { background-color: #d35400; transform: translateY(-1px); }
+        
+        .strategy { background-color: #e8f4f8; padding: 15px; border-radius: 8px; line-height: 1.6; border-top: none; border-left: 4px solid #3498db; }
+        .strategy ul { margin: 10px 0 0 0; padding-left: 20px; }
+        
+        .fixed-event { background-color: #f8ececc2; padding: 10px; border-radius: 4px; border-left: 4px solid #8e44ad; margin-top: 10px; font-size: 14px; font-weight: bold; color: #555; }
+
+        textarea { width: 100%; height: 400px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 14px; resize: vertical; box-sizing: border-box; line-height: 1.6; background-color: #fafafa; }
+        
+        .action-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .copy-btn { flex: 2; background-color: #2980b9; color: white; padding: 12px; font-size: 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .copy-btn:hover { background-color: #2471a3; }
+        .clear-btn { flex: 1; background-color: #c0392b; color: white; padding: 12px; font-size: 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .clear-btn:hover { background-color: #a93226; }
+        
+        .base-date-wrapper { background-color: #fff9e6; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #fdebd0; }
+        .base-date-header { display: flex; align-items: center; gap: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>🔥 스마트 보스 스케줄러</h1>
+
+    <div class="section strategy">
+        <h2>💡 팁 & 시스템 안내</h2>
+        <ul>
+            <li><strong>남은 시간:</strong> 젠까지 남은 시간을 입력하세요. (이미 떠있다면 <strong>0시간 0분</strong>으로 두면 됩니다)</li>
+            <li><strong>소요 시간(컷 타임):</strong> 컷 타임 동안은 다른 보스 일정이 잡히지 않습니다.</li>
+            <li><strong>자동 회피 시스템:</strong> 월드 보스(12시, 20시) 및 발할라(13시, 18시, 21시) 시간대와 겹치면 일정을 뒤로 자동으로 미룹니다.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="base-date-wrapper">
+            <div class="base-date-header">
+                ⏱️ 기준 시간(현재) : <input type="datetime-local" id="base-time">
+                <span style="font-size: 12px; font-weight: normal; color: #666;">(이 시간을 기준으로 '남은 시간'이 계산됩니다)</span>
+            </div>
+            <button class="timeline-btn" onclick="generateTimelineSchedule()">🗓️ 남은 시간 기반 통합 일정표 생성</button>
+        </div>
+        
+        <div class="boss-group">
+            <h2>절대자</h2>
+            <div id="absolute-list"></div>
+        </div>
+        
+        <div class="boss-group">
+            <h2>무스펠 (36시간)</h2>
+            <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 10px;">※ 메기르의 남은 시간을 입력하면 신마라(+3), 헤르가름(+5), 탕그(+8), 엘드룬(+11)이 자동 입력됩니다.</p>
+            <div id="muspel-list"></div>
+            <!-- 성체 보스 고정 안내 -->
+            <div class="fixed-event">
+                🏰 고정 일정 : 성체 보스 (매주 화, 목 21:30 ~ 22:00)
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="result-section" style="display: none;">
+        <h2>📢 톡방/디코 공지용 일정표 (수정 가능)</h2>
+        <textarea id="copy-textarea" placeholder="일정이 이곳에 생성됩니다."></textarea>
+        
+        <div class="action-buttons">
+            <button class="copy-btn" onclick="copyText()">📝 텍스트 복사하기</button>
+            <button class="clear-btn" onclick="clearText()">🗑️ 초기화</button>
+        </div>
+    </div>
+
+    <script>
+        // 보스 데이터 세팅 (소요 시간 디폴트값 포함)
+        const bosses = [
+            { id: 'tyr', name: '티르', group: 'absolute', cooldown: 36, dur: 30 },
+            { id: 'thor', name: '토르', group: 'absolute', cooldown: 48, dur: 60 },
+            { id: 'odin', name: '오딘', group: 'absolute', cooldown: 60, dur: 75 },
+            { id: 'megir', name: '메기르', group: 'muspel', cooldown: 36, dur: 1 },
+            { id: 'sinmara', name: '신마라', group: 'muspel', cooldown: 36, dur: 1 },
+            { id: 'garm', name: '헤르가름', group: 'muspel', cooldown: 36, dur: 2 },
+            { id: 'thang', name: '탕그스니르', group: 'muspel', cooldown: 36, dur: 4 },
+            { id: 'eldrun', name: '엘드룬', group: 'muspel', cooldown: 36, dur: 6 },
+            { id: 'uro', name: '우로보로스', group: 'muspel', cooldown: 36, dur: 15 }
+        ];
+
+        // 무스펠 연동 오프셋 (메기르 기준 분단위)
+        const muspelOffsets = {
+            '신마라': 3,
+            '헤르가름': 5,
+            '탕그스니르': 8,
+            '엘드룬': 11
+        };
+
+        function initBaseTime() {
+            let now = new Date();
+            // 로컬 타임존에 맞춰 datetime-local 포맷(YYYY-MM-DDTHH:mm)으로 세팅
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('base-time').value = now.toISOString().slice(0, 16);
+        }
+
+        function renderBosses() {
+            const absoluteDiv = document.getElementById('absolute-list');
+            const muspelDiv = document.getElementById('muspel-list');
+
+            bosses.forEach((boss, index) => {
+                let onChangeAttr = (boss.name === '메기르') ? 'onchange="autoFillMuspel()"' : '';
+                
+                const html = `
+                    <div class="boss-item">
+                        <div class="boss-name">${boss.name} <span style="font-size:12px; color:#888; font-weight:normal;">(${boss.cooldown}h)</span></div>
+                        <div class="input-group">
+                            <span style="font-weight:bold; color:#d35400;">남은 시간:</span>
+                            <input type="number" id="rem-h-${index}" min="0" value="" placeholder="0" ${onChangeAttr}> 시간
+                            <input type="number" id="rem-m-${index}" min="0" max="59" value="" placeholder="0" ${onChangeAttr}> 분
+                        </div>
+                        <div class="input-group">
+                            <span style="font-weight:bold; color:#2980b9;">컷 소요:</span>
+                            <input type="number" id="dur-${index}" min="1" value="${boss.dur}"> 분
+                        </div>
+                    </div>
+                `;
+                if(boss.group === 'absolute') absoluteDiv.innerHTML += html;
+                else muspelDiv.innerHTML += html;
+            });
+        }
+
+        // 메기르 남은 시간 입력 시 자동 세팅
+        function autoFillMuspel() {
+            const megirIdx = bosses.findIndex(b => b.name === '메기르');
+            let hVal = document.getElementById(`rem-h-${megirIdx}`).value;
+            let mVal = document.getElementById(`rem-m-${megirIdx}`).value;
+            
+            if (hVal === "" && mVal === "") return;
+
+            let h = parseInt(hVal) || 0;
+            let m = parseInt(mVal) || 0;
+            let totalMins = h * 60 + m;
+
+            bosses.forEach((boss, idx) => {
+                if (muspelOffsets[boss.name] !== undefined) {
+                    let offsetMins = totalMins + muspelOffsets[boss.name];
+                    let outH = Math.floor(offsetMins / 60);
+                    let outM = offsetMins % 60;
+                    document.getElementById(`rem-h-${idx}`).value = outH;
+                    document.getElementById(`rem-m-${idx}`).value = outM;
+                }
+            });
+        }
+
+        // 특정 기간 내의 고정 이벤트(블록) 반환
+        function getBlockedPeriods(startDate, endDate) {
+            let periods = [];
+            let d = new Date(startDate);
+            d.setHours(0,0,0,0); 
+            
+            while (d <= endDate) {
+                let y = d.getFullYear();
+                let m = d.getMonth();
+                let date = d.getDate();
+                let day = d.getDay(); // 0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토
+
+                // 월드 보스 (매일)
+                periods.push({ name: '월드 보스', start: new Date(y, m, date, 12, 0), end: new Date(y, m, date, 12, 30), type: 'fixed' });
+                periods.push({ name: '월드 보스', start: new Date(y, m, date, 20, 0), end: new Date(y, m, date, 20, 30), type: 'fixed' });
+
+                // 발할라 (매일)
+                periods.push({ name: '발할라', start: new Date(y, m, date, 13, 0), end: new Date(y, m, date, 13, 15), type: 'fixed' });
+                periods.push({ name: '발할라', start: new Date(y, m, date, 18, 0), end: new Date(y, m, date, 18, 15), type: 'fixed' });
+                periods.push({ name: '발할라', start: new Date(y, m, date, 21, 0), end: new Date(y, m, date, 21, 15), type: 'fixed' });
+
+                // 성체 보스 (화, 목)
+                if (day === 2 || day === 4) {
+                    periods.push({ name: '성체 보스', start: new Date(y, m, date, 21, 30), end: new Date(y, m, date, 22, 0), type: 'fixed' });
+                }
+
+                d.setDate(d.getDate() + 1);
+            }
+            return periods;
+        }
+
+        // 제안된 시작 시간이 고정 이벤트와 겹치는지 확인하고, 안 겹치는 빈 시간을 찾아 반환
+        function findFreeSlot(proposedStart, durationMins, blockedPeriods) {
+            let currentStart = new Date(proposedStart);
+            let durationMs = durationMins * 60000;
+            let found = false;
+
+            while (!found) {
+                let overlap = false;
+                let currentEnd = new Date(currentStart.getTime() + durationMs);
+
+                for (let block of blockedPeriods) {
+                    // 시작~종료 시간이 고정 이벤트(블록)와 조금이라도 겹치면
+                    if (currentStart < block.end && currentEnd > block.start) {
+                        overlap = true;
+                        // 해당 고정 이벤트가 끝나는 시간으로 미룸
+                        currentStart = new Date(block.end);
+                        break; 
+                    }
+                }
+                if (!overlap) found = true;
+            }
+            return currentStart;
+        }
+
+        function generateTimelineSchedule() {
+            const baseTimeInput = document.getElementById('base-time').value;
+            if (!baseTimeInput) return alert("기준 시간을 확인해주세요.");
+            let baseTime = new Date(baseTimeInput);
+
+            // 다음 주 수요일 오전 0시 초기화 시간 구하기
+            let day = baseTime.getDay();
+            let daysToNextWed = (3 - day + 7) % 7;
+            if (daysToNextWed === 0) daysToNextWed = 7; // 오늘이 수요일이면 다음주 수요일
+            
+            let nextWednesday = new Date(baseTime);
+            nextWednesday.setDate(nextWednesday.getDate() + daysToNextWed);
+            nextWednesday.setHours(0, 0, 0, 0);
+
+            let eventQueue = [];
+
+            // 1. 초기 상태 수집 (첫 젠)
+            let hasAnyInput = false;
+            bosses.forEach((boss, index) => {
+                let hVal = document.getElementById(`rem-h-${index}`).value;
+                let mVal = document.getElementById(`rem-m-${index}`).value;
+                if (hVal === "" && mVal === "") return;
+
+                hasAnyInput = true;
+                let h = parseInt(hVal) || 0;
+                let m = parseInt(mVal) || 0;
+                let dur = parseInt(document.getElementById(`dur-${index}`).value) || boss.dur;
+                
+                let readyTime = new Date(baseTime.getTime() + (h * 60 + m) * 60000);
+                
+                if (readyTime < nextWednesday) {
+                    eventQueue.push({ boss: boss, readyTime: readyTime, dur: dur, count: 1 });
+                }
+            });
+
+            if (!hasAnyInput) return alert("남은 시간을 입력한 보스가 없습니다.");
+
+            let blockedPeriods = getBlockedPeriods(baseTime, nextWednesday);
+            let finalSchedule = [];
+            let cursor = new Date(baseTime); // 파티가 가용한 시간 (이전 보스 컷이 끝난 시간)
+
+            // 2. 큐가 빌 때까지 스케줄링 시뮬레이션 (핵심: 컷 시간 기준 다음 젠 계산)
+            while (eventQueue.length > 0) {
+                // 가장 빨리 젠되는 순서대로 정렬
+                eventQueue.sort((a, b) => a.readyTime - b.readyTime);
+                let currentEv = eventQueue.shift();
+
+                // 보스가 떴지만, 파티가 다른 보스를 잡고 있다면 늦게 시작
+                let proposedStart = new Date(Math.max(cursor.getTime(), currentEv.readyTime.getTime()));
+                
+                // 월드보스/발할라 등과 겹치는지 검사 후 안전한 시작 시간 도출
+                let actualStart = findFreeSlot(proposedStart, currentEv.dur, blockedPeriods);
+                let actualEnd = new Date(actualStart.getTime() + currentEv.dur * 60000);
+
+                // 스케줄에 추가
+                finalSchedule.push({
+                    type: 'boss',
+                    name: currentEv.boss.name,
+                    start: actualStart,
+                    end: actualEnd,
+                    desc: `${currentEv.count}차`
+                });
+
+                // 파티 상태 업데이트
+                cursor = new Date(actualEnd);
+
+                // ⭐ 다음 젠 타임 계산: '실제 보스가 죽은 시간(actualEnd)' + 쿨타임
+                let nextReady = new Date(actualEnd.getTime() + currentEv.boss.cooldown * 60 * 60 * 1000);
+                if (nextReady < nextWednesday) {
+                    eventQueue.push({ boss: currentEv.boss, readyTime: nextReady, dur: currentEv.dur, count: currentEv.count + 1 });
+                }
+            }
+
+            // 3. 성체 보스 일정을 결과에 병합하여 출력
+            let allEvents = [...finalSchedule];
+            blockedPeriods.forEach(bp => {
+                if (bp.name === '성체 보스' && bp.start >= baseTime && bp.start < nextWednesday) {
+                    allEvents.push({ type: 'fixed', name: '🏰 성체 보스', start: bp.start, end: bp.end, desc: '고정 일정' });
+                }
+            });
+
+            allEvents.sort((a, b) => a.start - b.start);
+
+            // 날짜별로 텍스트 출력 조립
+            let resultText = "🗓️ [ 주간 보스 스마트 스케줄표 ] 🗓️\n";
+            resultText += "※ 일정 겹침 방지 및 컷 소요시간이 반영된 동선입니다.\n\n";
+            
+            let scheduleByDate = {};
+            allEvents.forEach(ev => {
+                let dateKey = formatJustDate(ev.start);
+                if (!scheduleByDate[dateKey]) scheduleByDate[dateKey] = [];
+                scheduleByDate[dateKey].push(ev);
+            });
+
+            for (const [dateStr, events] of Object.entries(scheduleByDate)) {
+                resultText += `■ ${dateStr}\n`;
+                events.forEach(ev => {
+                    let sTime = formatJustTime(ev.start);
+                    let eTime = formatJustTime(ev.end);
+                    if (ev.type === 'fixed') {
+                        resultText += ` - [${sTime} ~ ${eTime}] | ${ev.name}\n`;
+                    } else {
+                        resultText += ` - [${sTime} ~ ${eTime}] | ${ev.name} (${ev.desc})\n`;
+                    }
+                });
+                resultText += `\n`;
+            }
+
+            document.getElementById('copy-textarea').value = resultText.trim();
+            document.getElementById('result-section').style.display = 'block';
+            
+            // 결과창으로 스크롤 이동
+            document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- 공통 포맷 함수 ---
+        function formatJustDate(date) {
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dayName = days[date.getDay()];
+            return `${mm}월 ${dd}일(${dayName})`;
+        }
+
+        function formatJustTime(date) {
+            const hh = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${hh}:${min}`;
+        }
+
+        function copyText() {
+            const textarea = document.getElementById("copy-textarea");
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            try { navigator.clipboard.writeText(textarea.value).then(() => alert("일정표가 복사되었습니다!")); }
+            catch (err) { document.execCommand('copy'); alert("일정표가 복사되었습니다!"); }
+        }
+
+        function clearText() {
+            document.getElementById('copy-textarea').value = '';
+        }
+
+        initBaseTime();
+        renderBosses();
+    </script>
+</body>
+</html>
