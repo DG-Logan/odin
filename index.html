@@ -63,13 +63,17 @@
         </div>
         
         <div class="boss-group">
-            <h2>절대자</h2>
+            <h2>절대자 & 주요 보스 (60시간)</h2>
             <div id="absolute-list"></div>
+        </div>
+
+        <div class="boss-group">
+            <h2>필드 보스 (48시간)</h2>
+            <div id="field48-list"></div>
         </div>
         
         <div class="boss-group">
             <h2>무스펠 (36시간)</h2>
-            <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 10px;">※ 메기르의 남은 시간을 입력하면 신마라(+3), 헤르가름(+5), 탕그(+8), 엘드룬(+11)이 자동 입력됩니다.</p>
             <div id="muspel-list"></div>
             <!-- 성체 보스 고정 안내 -->
             <div class="fixed-event">
@@ -91,9 +95,20 @@
     <script>
         // 보스 데이터 세팅 (소요 시간 디폴트값 포함)
         const bosses = [
-            { id: 'tyr', name: '티르', group: 'absolute', cooldown: 48, dur: 30 },
-            { id: 'thor', name: '토르', group: 'absolute', cooldown: 48, dur: 60 },
+            // 절대자 및 60시간 그룹
+            { id: 'tyr', name: '티르', group: 'absolute', cooldown: 60, dur: 30 },
+            { id: 'thor', name: '토르', group: 'absolute', cooldown: 60, dur: 60 },
             { id: 'odin', name: '오딘', group: 'absolute', cooldown: 60, dur: 75 },
+            { id: 'surtr', name: '수르트', group: 'absolute', cooldown: 60, dur: 60 },
+            
+            // 48시간 필드 보스 그룹
+            { id: 'vali', name: '발리', group: 'field48', cooldown: 48, dur: 30 },
+            { id: 'nott', name: '노트', group: 'field48', cooldown: 48, dur: 30 },
+            { id: 'shamukh', name: '샤무크', group: 'field48', cooldown: 48, dur: 30 },
+            { id: 'skjald', name: '스칼드메르', group: 'field48', cooldown: 48, dur: 30 },
+            { id: 'groa', name: '그로아', group: 'field48', cooldown: 48, dur: 30 },
+
+            // 무스펠 36시간 그룹
             { id: 'megir', name: '메기르', group: 'muspel', cooldown: 36, dur: 1 },
             { id: 'sinmara', name: '신마라', group: 'muspel', cooldown: 36, dur: 1 },
             { id: 'garm', name: '헤르가름', group: 'muspel', cooldown: 36, dur: 2 },
@@ -102,35 +117,25 @@
             { id: 'uro', name: '우로보로스', group: 'muspel', cooldown: 36, dur: 15 }
         ];
 
-        // 무스펠 연동 오프셋 (메기르 기준 분단위)
-        const muspelOffsets = {
-            '신마라': 3,
-            '헤르가름': 5,
-            '탕그스니르': 8,
-            '엘드룬': 11
-        };
-
         function initBaseTime() {
             let now = new Date();
-            // 로컬 타임존에 맞춰 datetime-local 포맷(YYYY-MM-DDTHH:mm)으로 세팅
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('base-time').value = now.toISOString().slice(0, 16);
         }
 
         function renderBosses() {
             const absoluteDiv = document.getElementById('absolute-list');
+            const field48Div = document.getElementById('field48-list');
             const muspelDiv = document.getElementById('muspel-list');
 
             bosses.forEach((boss, index) => {
-                let onChangeAttr = (boss.name === '메기르') ? 'onchange="autoFillMuspel()"' : '';
-                
                 const html = `
                     <div class="boss-item">
                         <div class="boss-name">${boss.name} <span style="font-size:12px; color:#888; font-weight:normal;">(${boss.cooldown}h)</span></div>
                         <div class="input-group">
                             <span style="font-weight:bold; color:#d35400;">남은 시간:</span>
-                            <input type="number" id="rem-h-${index}" min="0" value="" placeholder="0" ${onChangeAttr}> 시간
-                            <input type="number" id="rem-m-${index}" min="0" max="59" value="" placeholder="0" ${onChangeAttr}> 분
+                            <input type="number" id="rem-h-${index}" min="0" value="" placeholder="0"> 시간
+                            <input type="number" id="rem-m-${index}" min="0" max="59" value="" placeholder="0"> 분
                         </div>
                         <div class="input-group">
                             <span style="font-weight:bold; color:#2980b9;">컷 소요:</span>
@@ -138,30 +143,13 @@
                         </div>
                     </div>
                 `;
-                if(boss.group === 'absolute') absoluteDiv.innerHTML += html;
-                else muspelDiv.innerHTML += html;
-            });
-        }
-
-        // 메기르 남은 시간 입력 시 자동 세팅
-        function autoFillMuspel() {
-            const megirIdx = bosses.findIndex(b => b.name === '메기르');
-            let hVal = document.getElementById(`rem-h-${megirIdx}`).value;
-            let mVal = document.getElementById(`rem-m-${megirIdx}`).value;
-            
-            if (hVal === "" && mVal === "") return;
-
-            let h = parseInt(hVal) || 0;
-            let m = parseInt(mVal) || 0;
-            let totalMins = h * 60 + m;
-
-            bosses.forEach((boss, idx) => {
-                if (muspelOffsets[boss.name] !== undefined) {
-                    let offsetMins = totalMins + muspelOffsets[boss.name];
-                    let outH = Math.floor(offsetMins / 60);
-                    let outM = offsetMins % 60;
-                    document.getElementById(`rem-h-${idx}`).value = outH;
-                    document.getElementById(`rem-m-${idx}`).value = outM;
+                
+                if (boss.group === 'absolute') {
+                    absoluteDiv.innerHTML += html;
+                } else if (boss.group === 'field48') {
+                    field48Div.innerHTML += html;
+                } else {
+                    muspelDiv.innerHTML += html;
                 }
             });
         }
@@ -176,7 +164,7 @@
                 let y = d.getFullYear();
                 let m = d.getMonth();
                 let date = d.getDate();
-                let day = d.getDay(); // 0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토
+                let day = d.getDay(); 
 
                 // 월드 보스 (매일)
                 periods.push({ name: '월드 보스', start: new Date(y, m, date, 12, 0), end: new Date(y, m, date, 12, 30), type: 'fixed' });
@@ -197,7 +185,6 @@
             return periods;
         }
 
-        // 제안된 시작 시간이 고정 이벤트와 겹치는지 확인하고, 안 겹치는 빈 시간을 찾아 반환
         function findFreeSlot(proposedStart, durationMins, blockedPeriods) {
             let currentStart = new Date(proposedStart);
             let durationMs = durationMins * 60000;
@@ -208,10 +195,8 @@
                 let currentEnd = new Date(currentStart.getTime() + durationMs);
 
                 for (let block of blockedPeriods) {
-                    // 시작~종료 시간이 고정 이벤트(블록)와 조금이라도 겹치면
                     if (currentStart < block.end && currentEnd > block.start) {
                         overlap = true;
-                        // 해당 고정 이벤트가 끝나는 시간으로 미룸
                         currentStart = new Date(block.end);
                         break; 
                     }
@@ -226,19 +211,17 @@
             if (!baseTimeInput) return alert("기준 시간을 확인해주세요.");
             let baseTime = new Date(baseTimeInput);
 
-            // 다음 주 수요일 오전 0시 초기화 시간 구하기
             let day = baseTime.getDay();
             let daysToNextWed = (3 - day + 7) % 7;
-            if (daysToNextWed === 0) daysToNextWed = 7; // 오늘이 수요일이면 다음주 수요일
+            if (daysToNextWed === 0) daysToNextWed = 7; 
             
             let nextWednesday = new Date(baseTime);
             nextWednesday.setDate(nextWednesday.getDate() + daysToNextWed);
             nextWednesday.setHours(0, 0, 0, 0);
 
             let eventQueue = [];
-
-            // 1. 초기 상태 수집 (첫 젠)
             let hasAnyInput = false;
+            
             bosses.forEach((boss, index) => {
                 let hVal = document.getElementById(`rem-h-${index}`).value;
                 let mVal = document.getElementById(`rem-m-${index}`).value;
@@ -260,22 +243,16 @@
 
             let blockedPeriods = getBlockedPeriods(baseTime, nextWednesday);
             let finalSchedule = [];
-            let cursor = new Date(baseTime); // 파티가 가용한 시간 (이전 보스 컷이 끝난 시간)
+            let cursor = new Date(baseTime); 
 
-            // 2. 큐가 빌 때까지 스케줄링 시뮬레이션 (핵심: 컷 시간 기준 다음 젠 계산)
             while (eventQueue.length > 0) {
-                // 가장 빨리 젠되는 순서대로 정렬
                 eventQueue.sort((a, b) => a.readyTime - b.readyTime);
                 let currentEv = eventQueue.shift();
 
-                // 보스가 떴지만, 파티가 다른 보스를 잡고 있다면 늦게 시작
                 let proposedStart = new Date(Math.max(cursor.getTime(), currentEv.readyTime.getTime()));
-                
-                // 월드보스/발할라 등과 겹치는지 검사 후 안전한 시작 시간 도출
                 let actualStart = findFreeSlot(proposedStart, currentEv.dur, blockedPeriods);
                 let actualEnd = new Date(actualStart.getTime() + currentEv.dur * 60000);
 
-                // 스케줄에 추가
                 finalSchedule.push({
                     type: 'boss',
                     name: currentEv.boss.name,
@@ -284,17 +261,14 @@
                     desc: `${currentEv.count}차`
                 });
 
-                // 파티 상태 업데이트
                 cursor = new Date(actualEnd);
 
-                // ⭐ 다음 젠 타임 계산: '실제 보스가 죽은 시간(actualEnd)' + 쿨타임
                 let nextReady = new Date(actualEnd.getTime() + currentEv.boss.cooldown * 60 * 60 * 1000);
                 if (nextReady < nextWednesday) {
                     eventQueue.push({ boss: currentEv.boss, readyTime: nextReady, dur: currentEv.dur, count: currentEv.count + 1 });
                 }
             }
 
-            // 3. 성체 보스 일정을 결과에 병합하여 출력
             let allEvents = [...finalSchedule];
             blockedPeriods.forEach(bp => {
                 if (bp.name === '성체 보스' && bp.start >= baseTime && bp.start < nextWednesday) {
@@ -304,7 +278,6 @@
 
             allEvents.sort((a, b) => a.start - b.start);
 
-            // 날짜별로 텍스트 출력 조립
             let resultText = "🗓️ [ 주간 보스 스마트 스케줄표 ] 🗓️\n";
             resultText += "※ 일정 겹침 방지 및 컷 소요시간이 반영된 동선입니다.\n\n";
             
@@ -331,12 +304,9 @@
 
             document.getElementById('copy-textarea').value = resultText.trim();
             document.getElementById('result-section').style.display = 'block';
-            
-            // 결과창으로 스크롤 이동
             document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // --- 공통 포맷 함수 ---
         function formatJustDate(date) {
             const mm = String(date.getMonth() + 1).padStart(2, '0');
             const dd = String(date.getDate()).padStart(2, '0');
