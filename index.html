@@ -14,10 +14,10 @@
         .boss-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; gap: 10px; }
         .boss-item:last-child { border-bottom: none; }
         .boss-item:hover { background-color: #fdfdfd; }
-        .boss-name { font-weight: bold; width: 100px; font-size: 15px; }
+        .boss-name { font-weight: bold; width: 110px; font-size: 15px; }
         
         .input-group { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #555; }
-        input[type="number"] { width: 45px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        input[type="number"] { width: 50px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
         input[type="datetime-local"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 14px; }
         
         .timeline-btn { padding: 12px 16px; background-color: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; box-shadow: 0 3px 5px rgba(230, 126, 34, 0.3); transition: 0.2s; margin-top: 10px; }
@@ -26,7 +26,10 @@
         .strategy { background-color: #e8f4f8; padding: 15px; border-radius: 8px; line-height: 1.6; border-top: none; border-left: 4px solid #3498db; }
         .strategy ul { margin: 10px 0 0 0; padding-left: 20px; }
         
-        .fixed-event { background-color: #f8ececc2; padding: 10px; border-radius: 4px; border-left: 4px solid #8e44ad; margin-top: 10px; font-size: 14px; font-weight: bold; color: #555; }
+        .fixed-event { background-color: #f8ececc2; padding: 10px; border-radius: 4px; border-left: 4px solid #8e44ad; margin-top: 10px; font-size: 14px; font-weight: bold; color: #555; display: flex; flex-direction: column; gap: 6px; }
+
+        .toggle-group { display: flex; gap: 15px; align-items: center; background: #f0f3f6; padding: 10px 15px; border-radius: 6px; margin-top: 10px; }
+        .toggle-group label { font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 14px; color: #2c3e50; }
 
         textarea { width: 100%; height: 400px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 14px; resize: vertical; box-sizing: border-box; line-height: 1.6; background-color: #fafafa; }
         
@@ -37,7 +40,7 @@
         .clear-btn:hover { background-color: #a93226; }
         
         .base-date-wrapper { background-color: #fff9e6; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #fdebd0; }
-        .base-date-header { display: flex; align-items: center; gap: 10px; font-weight: bold; }
+        .base-date-header { display: flex; align-items: center; gap: 10px; font-weight: bold; flex-wrap: wrap; }
     </style>
 </head>
 <body>
@@ -47,9 +50,9 @@
     <div class="section strategy">
         <h2>💡 팁 & 시스템 안내</h2>
         <ul>
-            <li><strong>남은 시간:</strong> 젠까지 남은 시간을 입력하세요. (이미 떠있다면 <strong>0시간 0분</strong>으로 두면 됩니다)</li>
-            <li><strong>소요 시간(컷 타임):</strong> 컷 타임 동안은 다른 보스 일정이 잡히지 않습니다.</li>
-            <li><strong>자동 회피 시스템:</strong> 월드 보스(12시, 20시) 및 발할라(13시, 18시, 21시) 시간대와 겹치면 일정을 뒤로 자동으로 미룹니다.</li>
+            <li><strong>남은 시간:</strong> 젠까지 남은 시간을 입력하세요. (이미 떠있다면 <strong>0시간 0분</strong>)</li>
+            <li><strong>무스펠 연계:</strong> '메기르' 남은 시간을 입력하면 컷 소요 시간에 따라 나머지 무스펠 보스의 시간이 자동으로 계산됩니다.</li>
+            <li><strong>자동 회피 시스템:</strong> 월드 보스(12시, 20시), 발할라(13시, 18시, 21시) 및 고정 이벤트 시간대와 겹치면 일정을 뒤로 자동으로 미룹니다.</li>
         </ul>
     </div>
 
@@ -59,11 +62,19 @@
                 ⏱️ 기준 시간(현재) : <input type="datetime-local" id="base-time">
                 <span style="font-size: 12px; font-weight: normal; color: #666;">(이 시간을 기준으로 '남은 시간'이 계산됩니다)</span>
             </div>
+
+            <!-- 격주 이벤트 선택 체크박스 -->
+            <div class="toggle-group">
+                <span>⚔️ 이번주 격주 콘텐츠 선택:</span>
+                <label><input type="checkbox" id="chk-trinity" onchange="toggleEvent('trinity')"> 🛡️ 트리니티 (일 21:30~23:30)</label>
+                <label><input type="checkbox" id="chk-siege" onchange="toggleEvent('siege')"> 🏰 공성전 (일 21:30~23:30)</label>
+            </div>
+
             <button class="timeline-btn" onclick="generateTimelineSchedule()">🗓️ 남은 시간 기반 통합 일정표 생성</button>
         </div>
         
         <div class="boss-group">
-            <h2>절대자 & 주요 보스 (60시간)</h2>
+            <h2>절대자 & 주요 보스</h2>
             <div id="absolute-list"></div>
         </div>
 
@@ -75,9 +86,10 @@
         <div class="boss-group">
             <h2>무스펠 (36시간)</h2>
             <div id="muspel-list"></div>
-            <!-- 성체 보스 고정 안내 -->
+            <!-- 고정 이벤트 안내 -->
             <div class="fixed-event">
-                🏰 고정 일정 : 성체 보스 (매주 화, 목 21:30 ~ 22:00)
+                <div>🏰 성체 보스 : 매주 화, 목 21:30 ~ 22:00</div>
+                <div>⚔️ 길드 던전 : 매주 일 19:00 ~ 19:30</div>
             </div>
         </div>
     </div>
@@ -95,7 +107,9 @@
     <script>
         // 보스 데이터 세팅 (소요 시간 디폴트값 포함)
         const bosses = [
-            // 절대자 및 60시간 그룹
+            // 절대자 및 주요 보스 그룹 (10층 보스는 36시간으로 설정)
+            { id: 'mimir', name: '미미르', group: 'absolute', cooldown: 60, dur: 60 },
+            { id: 'floor10', name: '10층 보스', group: 'absolute', cooldown: 36, dur: 60 },
             { id: 'tyr', name: '티르', group: 'absolute', cooldown: 60, dur: 30 },
             { id: 'thor', name: '토르', group: 'absolute', cooldown: 60, dur: 60 },
             { id: 'odin', name: '오딘', group: 'absolute', cooldown: 60, dur: 75 },
@@ -108,7 +122,7 @@
             { id: 'skjald', name: '스칼드메르', group: 'field48', cooldown: 48, dur: 30 },
             { id: 'groa', name: '그로아', group: 'field48', cooldown: 48, dur: 30 },
 
-            // 무스펠 36시간 그룹
+            // 무스펠 36시간 그룹 (순서 중요: 연계 자동 계산 대상)
             { id: 'megir', name: '메기르', group: 'muspel', cooldown: 36, dur: 1 },
             { id: 'sinmara', name: '신마라', group: 'muspel', cooldown: 36, dur: 1 },
             { id: 'garm', name: '헤르가름', group: 'muspel', cooldown: 36, dur: 2 },
@@ -123,23 +137,31 @@
             document.getElementById('base-time').value = now.toISOString().slice(0, 16);
         }
 
+        function toggleEvent(type) {
+            const trinity = document.getElementById('chk-trinity');
+            const siege = document.getElementById('chk-siege');
+            if (type === 'trinity' && trinity.checked) siege.checked = false;
+            if (type === 'siege' && siege.checked) trinity.checked = false;
+        }
+
         function renderBosses() {
             const absoluteDiv = document.getElementById('absolute-list');
             const field48Div = document.getElementById('field48-list');
             const muspelDiv = document.getElementById('muspel-list');
 
             bosses.forEach((boss, index) => {
+                const onInputHandler = boss.id === 'megir' ? `oninput="autoCalcMuspel()"` : '';
                 const html = `
                     <div class="boss-item">
                         <div class="boss-name">${boss.name} <span style="font-size:12px; color:#888; font-weight:normal;">(${boss.cooldown}h)</span></div>
                         <div class="input-group">
                             <span style="font-weight:bold; color:#d35400;">남은 시간:</span>
-                            <input type="number" id="rem-h-${index}" min="0" value="" placeholder="0"> 시간
-                            <input type="number" id="rem-m-${index}" min="0" max="59" value="" placeholder="0"> 분
+                            <input type="number" id="rem-h-${index}" min="0" value="" placeholder="0" ${onInputHandler}> 시간
+                            <input type="number" id="rem-m-${index}" min="0" max="59" value="" placeholder="0" ${onInputHandler}> 분
                         </div>
                         <div class="input-group">
                             <span style="font-weight:bold; color:#2980b9;">컷 소요:</span>
-                            <input type="number" id="dur-${index}" min="1" value="${boss.dur}"> 분
+                            <input type="number" id="dur-${index}" min="1" value="${boss.dur}" ${onInputHandler}> 분
                         </div>
                     </div>
                 `;
@@ -154,11 +176,36 @@
             });
         }
 
-        // 특정 기간 내의 고정 이벤트(블록) 반환
+        function autoCalcMuspel() {
+            const megirIdx = bosses.findIndex(b => b.id === 'megir');
+            const megirH = parseInt(document.getElementById(`rem-h-${megirIdx}`).value);
+            const megirM = parseInt(document.getElementById(`rem-m-${megirIdx}`).value);
+
+            if (isNaN(megirH) && isNaN(megirM)) return;
+
+            let accumulatedMinutes = (megirH || 0) * 60 + (megirM || 0);
+
+            for (let i = megirIdx; i < bosses.length; i++) {
+                if (i > megirIdx) {
+                    const prevDur = parseInt(document.getElementById(`dur-${i - 1}`).value) || bosses[i - 1].dur;
+                    accumulatedMinutes += prevDur;
+                    
+                    const h = Math.floor(accumulatedMinutes / 60);
+                    const m = accumulatedMinutes % 60;
+
+                    document.getElementById(`rem-h-${i}`).value = h;
+                    document.getElementById(`rem-m-${i}`).value = m;
+                }
+            }
+        }
+
         function getBlockedPeriods(startDate, endDate) {
             let periods = [];
             let d = new Date(startDate);
             d.setHours(0,0,0,0); 
+
+            const isTrinity = document.getElementById('chk-trinity').checked;
+            const isSiege = document.getElementById('chk-siege').checked;
             
             while (d <= endDate) {
                 let y = d.getFullYear();
@@ -166,18 +213,25 @@
                 let date = d.getDate();
                 let day = d.getDay(); 
 
-                // 월드 보스 (매일)
                 periods.push({ name: '월드 보스', start: new Date(y, m, date, 12, 0), end: new Date(y, m, date, 12, 30), type: 'fixed' });
                 periods.push({ name: '월드 보스', start: new Date(y, m, date, 20, 0), end: new Date(y, m, date, 20, 30), type: 'fixed' });
 
-                // 발할라 (매일)
                 periods.push({ name: '발할라', start: new Date(y, m, date, 13, 0), end: new Date(y, m, date, 13, 15), type: 'fixed' });
                 periods.push({ name: '발할라', start: new Date(y, m, date, 18, 0), end: new Date(y, m, date, 18, 15), type: 'fixed' });
                 periods.push({ name: '발할라', start: new Date(y, m, date, 21, 0), end: new Date(y, m, date, 21, 15), type: 'fixed' });
 
-                // 성체 보스 (화, 목)
                 if (day === 2 || day === 4) {
                     periods.push({ name: '성체 보스', start: new Date(y, m, date, 21, 30), end: new Date(y, m, date, 22, 0), type: 'fixed' });
+                }
+
+                if (day === 0) {
+                    periods.push({ name: '길드 던전', start: new Date(y, m, date, 19, 0), end: new Date(y, m, date, 19, 30), type: 'fixed' });
+
+                    if (isTrinity) {
+                        periods.push({ name: '🛡️ 트리니티', start: new Date(y, m, date, 21, 30), end: new Date(y, m, date, 23, 30), type: 'fixed' });
+                    } else if (isSiege) {
+                        periods.push({ name: '🏰 공성전', start: new Date(y, m, date, 21, 30), end: new Date(y, m, date, 23, 30), type: 'fixed' });
+                    }
                 }
 
                 d.setDate(d.getDate() + 1);
@@ -271,8 +325,10 @@
 
             let allEvents = [...finalSchedule];
             blockedPeriods.forEach(bp => {
-                if (bp.name === '성체 보스' && bp.start >= baseTime && bp.start < nextWednesday) {
-                    allEvents.push({ type: 'fixed', name: '🏰 성체 보스', start: bp.start, end: bp.end, desc: '고정 일정' });
+                if (bp.type === 'fixed' && bp.start >= baseTime && bp.start < nextWednesday) {
+                    if (['성체 보스', '길드 던전', '🛡️ 트리니티', '🏰 공성전'].includes(bp.name)) {
+                        allEvents.push({ type: 'fixed', name: bp.name, start: bp.start, end: bp.end, desc: '고정 일정' });
+                    }
                 }
             });
 
